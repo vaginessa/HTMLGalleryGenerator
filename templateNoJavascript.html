@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<title><?hgg title Index?>(<?hgg num?>)</title>
+</head>
+
+<body>
+<?hgg for path start?>
+<a href="<?hgg var href?>" style="position: relative"><?hgg var title Index?>(<?hgg var num?>)</a>
+<?hgg if isLast==False start?>/<?hgg if end?>
+<?hgg for path end?>
+<br><br>
+<table border="1">
+<tr>
+<?hgg for files start?>
+<?hgg if (i%3==0)&(i!=0) start?></tr><tr><?hgg if end?>
+<td>
+	<a href="<?hgg var href?>">
+		<img src="<?hgg var thumbnail data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs%3D?>">
+	<br>
+	<?hgg var title?><?hgg if isDir start?>(<?hgg var num?>)<?hgg if end?><?hgg if isVideo start?>(<?hgg var length 0:00?>)<?hgg if end?>
+	</a>
+</td>
+<?hgg for files end?>
+</tr>
+</table>
+
+</html>
