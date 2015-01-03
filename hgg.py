@@ -572,7 +572,14 @@ if not invalidArguments and len(parameters) == 2:
 			mkdirIfNotExist('{0}/thumbnails/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
 			mkdirIfNotExist('{0}/converted/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
 		if generateThumbnails(dest, database, rootRel, files):
+			#if a new thumbnail is generated, add `rootRel` and its parents to `update`
 			update.append(rootRel)
+			parentPath = rootRel
+			while parentPath.rfind('/') != -1:
+				print(parentPath)
+				parentPath = parentPath[:parentPath.rfind('/')]
+				if parentPath not in update:
+					update.append(parentPath)
 		if time.time()-lastDatabaseSaveTime > DATABASE_FLUST_INTERVAL:
 			database.save()
 
