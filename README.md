@@ -1,4 +1,4 @@
-HTML Gallery Generator
+# HTML Gallery Generator
 
 ==========
 
@@ -22,9 +22,9 @@ Showcase
 
 License
 
-hgg.py: The BSD 2-Clause License
-Everything inside ./example/semantic-ui: The MIT License(as of 03/01/2015). [(Project homepage)](http://semantic-ui.com/)
-Everything else: public domain
+* hgg.py: The BSD 2-Clause License
+* Everything inside ./example/semantic-ui: The MIT License(as of 03/01/2015). [(Project homepage)](http://semantic-ui.com/)
+* Everything else: public domain
 
 Requirements (Assume using ubuntu package repo)
 
@@ -38,7 +38,9 @@ Requirements (Assume using ubuntu package repo)
 
 On Ubuntu:
 
-`sudo apt-get install python3-pil python3-gst-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly`
+```
+sudo apt-get install python3-pil python3-gst-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+```
 
 Usage
 
@@ -165,7 +167,7 @@ mtime
 
 Warning: HTML template of this script is capable for running dangerous commands. For better security:
 
-* Checks `<?hgg var convertedHref [... ... ...]>` before using it. This script runs `[... ... ...]` as system command
+* Checks `<?hgg var convertedHref [... ... ...] [else]>` before using it. This script runs `[... ... ...]` as system command
 * Checks `<?hgg if [expr]>` in template before using it. This script evaluates `[expr]` in python
 * Remove write permission of the template file a.k.a. `og-w`
 * Don't run this script as root unless you need to
