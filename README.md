@@ -24,7 +24,7 @@
 * Everything inside ./example/semantic-ui: The MIT License(as of 03/01/2015). [(Project homepage)](http://semantic-ui.com/)
 * Everything else: public domain
 
-## Requirements (Assume using ubuntu package repo)
+## Requirements
 
 * Linux. Not tested on other Operating System
 * Python 3
