@@ -12,11 +12,11 @@
 
 ## Showcase
 
-* template.html([view](http://hgg.sadale.duckdns.org/template.html/)) - A gallery template using semantic-ui. Recommended if you don't want to write your own template.
-* templateNoJavascript.html([view](http://hgg.sadale.duckdns.org/templateNoJavascript.html/)) - A simple gallery template. Read this example if you want to create your own template.
-* templateNoJavascript4.html([view](http://hgg.sadale.duckdns.org/templateNoJavascript4.html/)) - Based on templateNoJavascript.html. It shows 4 thumbnails for directories.
-* template.php([view](http://hgg.sadale.duckdns.org/template.php/)) - Based on template.html. It displays the modification time of the script at the bottom(php required).
-* templateConvertVideo.html([view](http://hgg.sadale.duckdns.org/templateConvertVideo.html/)) - Based on template.html. It convert the video to mp4 format that is supported by most Android devices
+* template.html([view generated gallery](http://hgg.sadale.duckdns.org/template.html/)) - A gallery template using semantic-ui. Recommended if you don't want to write your own template.
+* templateNoJavascript.html([view generated gallery](http://hgg.sadale.duckdns.org/templateNoJavascript.html/)) - A simple gallery template. Read this example if you want to create your own template.
+* templateNoJavascript4.html([view generated gallery](http://hgg.sadale.duckdns.org/templateNoJavascript4.html/)) - Based on templateNoJavascript.html. It shows 4 thumbnails for directories.
+* template.php([view generated gallery](http://hgg.sadale.duckdns.org/template.php/)) - Based on template.html. It displays the modification time of the script at the bottom(php required).
+* templateConvertVideo.html([view generated gallery](http://hgg.sadale.duckdns.org/templateConvertVideo.html/)) - Based on template.html. It convert the video to mp4 format that is supported by most Android devices
 
 ## License
 
