@@ -521,7 +521,7 @@ options = [i[1:] for i in sys.argv[1:] if i.find('-')==0]
 for o in options:
 	if o=='gc':
 		garbageCollection = True
-	if o=='regen-web-files':
+	elif o=='regen-web-files':
 		regenWebFiles = True
 	else:
 		print('Unknown option -'+o)
