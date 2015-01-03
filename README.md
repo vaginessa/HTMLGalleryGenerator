@@ -56,7 +56,7 @@ hgg.py <dest> <template> [-gc] [-regenWebFiles]
 
 1. Run `hgg.py example template.html`
 2. After the generation is completed, open `./example/index.html` in your browser
-* You may want:
+* You may want to:
 	* Update the content in `./example/assets/` and run the command again
 	* Try another template, or create your own template.
 	* Start a new gallery. **Remember to copy `./example/semantic-ui` to `path/to/new/gallery/semantic-ui` if you are using `template.html` or other template that use semantic-ui**
