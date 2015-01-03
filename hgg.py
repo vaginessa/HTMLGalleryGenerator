@@ -201,6 +201,8 @@ class Match:
 ##########################
 ###generation functions###
 ##########################
+
+#Returns true if the directory `rootRel` is updated.
 def generateThumbnails(dest, database, rootRel, files):
 	updated = False
 	for f in files:
@@ -208,24 +210,24 @@ def generateThumbnails(dest, database, rootRel, files):
 		relInFile = 'assets/{0}'.format(rootRelNoSlash(rootRel)+f) #Path to the inFile relative to <dest>
 		inFile = '{0}/{1}'.format(dest,relInFile)
 		thumbnailFile = '{0}/thumbnails/{1}.jpg'.format(dest, rootRelNoSlash(rootRel)+f)
-		#Check for support of file format
-		if os.path.splitext(inFile)[1].lower() not in SUPPORTED_FORMATS and not SHOW_UNSUPPORTED_FORMATS:
-			continue
 
 		mtime = os.path.getmtime(inFile)
 		#Check if thumbnail is already generated
 		if relInFile in database.data and database.data[relInFile].mtime == mtime and os.path.exists(thumbnailFile):
 			continue
+		updated = True
+
+		#Check for support of file format
+		if os.path.splitext(inFile)[1].lower() not in SUPPORTED_FORMATS and not SHOW_UNSUPPORTED_FORMATS:
+			continue
 
 		try:
 			if os.path.splitext(inFile)[1].lower() in SUPPORTED_IMAGE_FORMATS:
-				updated = True
 				im = Image.open(inFile)
 				im.thumbnail(THUMBNAIL_SIZE, Image.ANTIALIAS)
 				database.data[relInFile] = DataEntity(mtime)
 				im.save(thumbnailFile, 'JPEG')
 			elif os.path.splitext(inFile)[1].lower() in SUPPORTED_VIDEO_FORMATS:
-				updated = True
 				im = Image.open(io.BytesIO(getVideoThumbnail(inFile)))
 				im.thumbnail(THUMBNAIL_SIZE, Image.ANTIALIAS)
 				database.data[relInFile] = DataEntity(mtime)
