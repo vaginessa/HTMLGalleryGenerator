@@ -1,8 +1,6 @@
 # HTML Gallery Generator
 
-==========
-
-Features
+## Features
 
 * Generate image&video thumbnails
 * Only regenerates contents that are required
@@ -12,7 +10,7 @@ Features
 * wide number of attributes available. See the documentation below
 * for and if statements support
 
-Showcase
+## Showcase
 
 * template.html([view](http://hgg.sadale.duckdns.org/template.html/)) - A gallery template using semantic-ui. Recommended if you don't want to write your own template.
 * templateNoJavascript.html([view](http://hgg.sadale.duckdns.org/templateNoJavascript.html/)) - A simple gallery template. Read this example if you want to create your own template.
@@ -20,13 +18,13 @@ Showcase
 * template.php([view](http://hgg.sadale.duckdns.org/template.php/)) - Based on template.html. It displays the modification time of the script at the bottom(php required).
 * templateConvertVideo.html([view](http://hgg.sadale.duckdns.org/templateConvertVideo.html/)) - Based on template.html. It convert the video to mp4 format that is supported by most Android devices
 
-License
+## License
 
 * hgg.py: The BSD 2-Clause License
 * Everything inside ./example/semantic-ui: The MIT License(as of 03/01/2015). [(Project homepage)](http://semantic-ui.com/)
 * Everything else: public domain
 
-Requirements (Assume using ubuntu package repo)
+## Requirements (Assume using ubuntu package repo)
 
 * Linux. Not tested on other Operating System
 * Python 3
@@ -42,7 +40,7 @@ On Ubuntu:
 sudo apt-get install python3-pil python3-gst-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
 ```
 
-Usage
+## Usage
 
 ```
 hgg.py <dest> <template> [-gc] [-regenWebFiles]
@@ -51,10 +49,10 @@ hgg.py <dest> <template> [-gc] [-regenWebFiles]
 * `-gc` enables garbage collection
 * `-regen-web-files` forces regeneration of web files
 * To regenerate thumbnails or converted files, you have to delete the directory `thumbnail/` or `converted/` manually.
-* The web files generated has the same file extension as the &lt;template&gt;
+* The web files generated has the same file extension as the `<template>`
 * You may want to modify the `CONFIGURATION` section in `hgg.py`
 
-Getting Started
+## Getting Started
 
 1. Run `hgg.py example template.html`
 2. After the generation is completed, open `./example/index.html` in your browser
@@ -63,7 +61,7 @@ Getting Started
 	* Try another template, or create your own template.
 	* Start a new gallery. **Remember to copy `./example/semantic-ui` to `path/to/new/gallery/semantic-ui` if you are using `template.html` or other template that use semantic-ui**
 
-Directory Layout
+## Directory Layout
 
 ```
 gallery/
@@ -100,7 +98,7 @@ gallery/
 	bbb-ccc.html
 ```
 
-Template documentation
+## Template documentation
 
 ```
 for arg start, for arg end:
