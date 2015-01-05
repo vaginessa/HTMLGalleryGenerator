@@ -580,6 +580,8 @@ if not invalidArguments and len(parameters) == 2:
 				parentPath = parentPath[:parentPath.rfind('/')]
 				if parentPath not in update:
 					update.append(parentPath)
+			if '' not in update: #Since the content of rootRel is like `aa/bb/cc`, we need to add '' to the update list to make the index updated.
+				update.append('')
 		if time.time()-lastDatabaseSaveTime > DATABASE_FLUST_INTERVAL:
 			database.save()
 
