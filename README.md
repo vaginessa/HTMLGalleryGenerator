@@ -104,13 +104,13 @@ gallery/
 for arg start, for arg end:
 	path -- elements of each path component of the gallery
 		attributes:
-			title(for non-index only)
+			title(for non-index only)(HTML character escaped)
 			href
 			num
 		Example: 'a/b/c' returns ['a', 'b', 'c']
 	files -- the files in the current directory, sorted alphabetically
 		attributes:
-			title
+			title(HTML character escaped)
 			thumbnail(URL quoted. For directory: defined only if there is picture inside a folder. For files: defined if it is image or video file)
 			thumbnails[n](URL quoted. n is index. directory only)
 			href(URL quoted)

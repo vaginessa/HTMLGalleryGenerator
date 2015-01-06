@@ -35,6 +35,7 @@ SUPPORTED_FORMATS = MEDIA_FORMATS+SUPPORTED_MISC_FORMATS
 ##############################
 
 import os, sys, hashlib, shutil, re, random, time, io, urllib.request
+from xml.sax.saxutils import escape
 from PIL import Image
 import gi
 gi.require_version('Gst', '1.0')
@@ -276,7 +277,7 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 						if r == '': #''.split('/') returns ['']. We don't want this component.
 							continue
 						dirPath += r+'/'
-						varList.append({'title':r, 'href':urllib.request.pathname2url('{0}.{1}'.format(dirPath[:-1], webFormat)).replace('/','-'), 'num': str(len(getFilesRecursive(lambda a,b,c,d:0, '{0}/assets/{1}'.format(dest, dirPath))))})
+						varList.append({'title':escape(r), 'href':urllib.request.pathname2url('{0}.{1}'.format(dirPath[:-1], webFormat)).replace('/','-'), 'num': str(len(getFilesRecursive(lambda a,b,c,d:0, '{0}/assets/{1}'.format(dest, dirPath))))})
 				elif tags[i][1] == 'files':
 					for d in sorted(dirs):
 						prefix = '{0}/thumbnails'.format(dest)
@@ -290,7 +291,7 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 						inFile = '{0}/assets/{1}'.format(dest, rootRelNoSlash(rootRel)+d)
 						mtime = time.strftime(TIME_FORMAT, time.gmtime(os.path.getmtime(inFile)))
 						size = humanReadable(os.path.getsize(inFile))
-						varList.append({'title':d, 'href':urllib.request.pathname2url(hrefPath), 'num': str(getDirectoryItemsNum(inFile)), 'size': size, 'mtime': mtime, 'isDir':True, 'isImage':False, 'isVideo':False, 'isMusic':False, 'isMisc':False})
+						varList.append({'title':escape(d), 'href':urllib.request.pathname2url(hrefPath), 'num': str(getDirectoryItemsNum(inFile)), 'size': size, 'mtime': mtime, 'isDir':True, 'isImage':False, 'isVideo':False, 'isMusic':False, 'isMisc':False})
 						index=0
 						for t in thumbnailPaths:
 							varList[-1]['thumbnails[{0}]'.format(index)] = urllib.request.pathname2url(t)
@@ -307,7 +308,7 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 						mtime = time.strftime(TIME_FORMAT, time.gmtime(os.path.getmtime(inFile)))
 						size = humanReadable(os.path.getsize(inFile))
 						fileExtension = os.path.splitext(inFile)[1].lower()
-						varList.append({'title':f, 'href':urllib.request.pathname2url(hrefPath), 'size': size, 'mtime': mtime, 'format':fileExtension, 'isDir':False, 'isImage':fileExtension in SUPPORTED_IMAGE_FORMATS, 'isVideo':fileExtension in SUPPORTED_VIDEO_FORMATS, 'isMusic':fileExtension in SUPPORTED_MUSIC_FORMATS, 'isMisc':fileExtension not in MEDIA_FORMATS})
+						varList.append({'title':escape(f), 'href':urllib.request.pathname2url(hrefPath), 'size': size, 'mtime': mtime, 'format':fileExtension, 'isDir':False, 'isImage':fileExtension in SUPPORTED_IMAGE_FORMATS, 'isVideo':fileExtension in SUPPORTED_VIDEO_FORMATS, 'isMusic':fileExtension in SUPPORTED_MUSIC_FORMATS, 'isMisc':fileExtension not in MEDIA_FORMATS})
 						try:
 							if varList[-1]['isImage']:
 								dimension=Image.open(inFile).size
@@ -387,7 +388,7 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 		elif tags[i][0] == 'fullTitle': #Parse the full title of the page
 			ret += rootRel if rootRel != '' else tags[i][1]
 		elif tags[i][0] == 'title': #Parse the title of the page
-			ret += rootRel[:rootRel.rfind('/')] if rootRel.rfind('/') != -1 else (rootRel if rootRel != '' else tags[i][1])
+			ret += escape( rootRel[:rootRel.rfind('/')] if rootRel.rfind('/') != -1 else (rootRel if rootRel != '' else tags[i][1]) )
 		elif tags[i][0] == 'num': #Parse the number of files in the page, recursively
 			ret += str(getDirectoryItemsNum('{0}/assets/{1}'.format(dest, rootRel)))
 		elif tags[i][0].find('thumbnails') == 0: #Parse the title of the page
