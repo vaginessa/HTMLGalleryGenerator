@@ -155,7 +155,7 @@ def getMediaDuration(path):
 ###Database functions###
 ########################
 #Assumption:
-DATABASE_VERSION = 0
+DATABASE_VERSION = 1
 class DataEntity:
 	def __init__(self, mtime):
 		self.mtime = float(mtime)
@@ -163,7 +163,8 @@ class DataEntity:
 class Database:
 	def __init__(self, filePath):
 		self.filePath = filePath
-		self.version = 0
+		self.directories = ['']
+		self.version = DATABASE_VERSION
 		self.templateCheckSum = 0
 		self.data = {}
 		f = open(filePath, 'r')
@@ -172,10 +173,27 @@ class Database:
 		if len(lines) == 0:
 			return
 		self.version = int(lines[0])
-		self.templateCheckSum = lines[1]
 		if self.version == 0:
+			self.templateCheckSum = lines[1]
 			lines = lines[2:]
 			for l in lines:
+				cols = l.split('\t')
+				self.data[cols[0]] = DataEntity(cols[1])
+
+			#Predict the current directory structure by the thumbnails. It assumes that the directory structure of the thumbnails is not modified.
+			#Note: it only works if the previous run has -gc
+			thumbnailPath = dest+'/thumbnails'
+			for root, dirs, files in os.walk(thumbnailPath):
+				rootRel = root[len(thumbnailPath)+1:]
+				for d in dirs:
+					self.directories.append(rootRelNoSlash(rootRel)+d)
+		elif self.version == 1:
+			self.templateCheckSum = lines[1]
+			lines = lines[2:]
+			if not '' in lines:
+				raise Exception('Error: Invalid database fotmat. Expecting an empty line.')
+			self.directories += lines[:lines.index('')]
+			for l in lines[lines.index('')+1:]:
 				cols = l.split('\t')
 				self.data[cols[0]] = DataEntity(cols[1])
 		else:
@@ -188,6 +206,10 @@ class Database:
 		f = open(self.filePath, 'w')
 		f.write('{0}\n'.format(DATABASE_VERSION))
 		f.write('{0}\n'.format(self.templateCheckSum))
+		for item in self.directories:
+			if item != '':
+				f.write('{0}\n'.format(item))
+		f.write('\n')
 		for key in self.data:
 			f.write('{0}\t{1}\n'.format(key, self.data[key].mtime))
 		f.close()
@@ -483,19 +505,15 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 		filesList += [rootRelNoSlash(rootRel)+f for f in files]
 
 	#Looks for old directory layout for the removal of web files
-	oldDirectoryList = []
-	#for f in database.data:
-	#	d = f[:f.rfind('/')]
-	#	dirRel = d[len('assets/'):]
-	#	if dirRel not in oldDirectoryList and dirRel != '':
-	#		oldDirectoryList.append(dirRel)
+	currentDirectoryList = []
 
-	#Predict the old directory structure by the thumbnails. It assumes that the directory structure of the thumbnails is not modified.
+	#Predict the current directory structure by the thumbnails. It assumes that the directory structure of the thumbnails is not modified.
+	#Note: it is different from oldDirectoryList. oldDirectoryList stores the previous directory layout in asset file(which doesn't include non-garbage collected files), while currentDirectoryList stores the current directory layout of thumbnails(and it assumes that the dicretory layout of converted is the same)(which include the non-garbage collected files). If garbage collection is enabled in the previous command, than both are identical.
 	thumbnailPath = dest+'/thumbnails'
 	for root, dirs, files in os.walk(thumbnailPath):
 		rootRel = root[len(thumbnailPath)+1:]
 		for d in dirs:
-			oldDirectoryList.append(rootRelNoSlash(rootRel)+d)
+			currentDirectoryList.append(rootRelNoSlash(rootRel)+d)
 
 
 	#Remove old database entities
@@ -507,7 +525,7 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 	#Remove old web files
 	#FIXME: If the previous version of the template is in another format, then the old web files are not removed.
 	webFormat = os.path.splitext(template)[1][1:]
-	for d in oldDirectoryList:
+	for d in currentDirectoryList:
 		if d not in directoryList:
 			oldFile = '{0}/{1}.{2}'.format(dest, d.replace('/','-'), webFormat)
 			if os.path.exists(oldFile):
@@ -598,6 +616,8 @@ if not invalidArguments and len(parameters) == 2:
 	createIfNotExist(databasePath)
 	database = Database(databasePath)
 
+	oldDirectoryList = database.directories[:]
+	newDirectoryList = []
 
 	readme = '{0}/README'.format(dest)
 	if not os.path.exists(readme):
@@ -624,7 +644,7 @@ if not invalidArguments and len(parameters) == 2:
 		for d in dirs: #Create the directories structure
 			mkdirIfNotExist('{0}/thumbnails/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
 			mkdirIfNotExist('{0}/converted/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
-		if generateThumbnails(dest, database, rootRel, files):
+		if generateThumbnails(dest, database, rootRel, files) or update not in oldDirectoryList:
 			#if a new thumbnail is generated, add `rootRel` and its parents to `update`
 			update.append(rootRel)
 			parentPath = rootRel
@@ -637,10 +657,12 @@ if not invalidArguments and len(parameters) == 2:
 				update.append('')
 		if time.time()-lastDatabaseSaveTime > DATABASE_FLUST_INTERVAL:
 			database.save()
+		newDirectoryList += [rootRelNoSlash(rootRel)+d for d in dirs]
 
 	if fullUpdate or len(update)>0 or regenWebFiles:
 		webFormat = os.path.splitext(template)[1][1:]
 		#Do generation and update of gallery
+		database.directories = newDirectoryList
 		database.save()
 		assetDir = '{0}/assets'.format(dest)
 		for root, dirs, files in os.walk(assetDir):
