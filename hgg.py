@@ -581,6 +581,7 @@ garbageCollection = False
 regenWebFiles = False
 dryRun = False
 verbose = False
+moveMode = False
 
 options = [i[1:] for i in sys.argv[1:] if i.find('-')==0]
 for o in options:
@@ -592,6 +593,8 @@ for o in options:
 		dryRun = True
 	elif o=='v':
 		verbose = True
+	elif o=='mv':
+		moveMode = True
 	else:
 		print('Unknown option -'+o)
 		invalidArguments = True
@@ -599,86 +602,146 @@ for o in options:
 parameters = [i for i in sys.argv[1:] if i.find('-')!=0]
 
 if not invalidArguments and len(parameters) == 2:
-	lastDatabaseSaveTime = time.time()
+	if moveMode: # hgg.py -mv <srcFile> <destFile> [-v] [-dry-run]
+		srcFile, destFile = parameters
+		if not os.path.exists(srcFile):
+			raise Exception('{0} does not exist'.format(srcFile))
+		if os.path.exists(destFile):
+			raise Exception('{0} exist. Not overwriting/merging'.format(srcFile))
 
-	dest, template = parameters
+		#Detect the root of the gallery.
+		srcFileAbs = os.path.abspath(srcFile)
+		destFileAbs = os.path.abspath(destFile)
+		root = ''
+		while True:
+			root = srcFileAbs[:srcFileAbs.find('assets/', len(root+'/')+1)-1]
+			if srcFileAbs.find('assets/', len(root+'/')) == -1:
+				break;
+			if os.path.isfile('{0}/database'.format(root)):
+				if destFileAbs.find(root) != 0:
+					raise Exception('{0} and {1} are not of the same root'.format(srcFile, destFile));
+				break;
 
-	while len(dest) > 1 and dest[-1] == '/': #Remove the tailing /'s. Note that we won't remove the last / in case the user is spevifying / as the destination(what a stupid user!)
-		dest = dest[:-1]
+		if srcFileAbs.find('assets/', len(root+'/')) == -1:
+			raise Exception('{0} in not inside a gallery'.format(srcFileAbs));
 
-	print('Initializing...')
-	mkdirIfNotExist(dest)
-	mkdirIfNotExist('{0}/thumbnails'.format(dest))
-	mkdirIfNotExist('{0}/assets'.format(dest))
-	mkdirIfNotExist('{0}/converted'.format(dest))
-
-	databasePath = '{0}/database'.format(dest)
-	createIfNotExist(databasePath)
-	database = Database(databasePath)
-
-	oldDirectoryList = database.directories[:]
-	newDirectoryList = []
-
-	readme = '{0}/README'.format(dest)
-	if not os.path.exists(readme):
 		if verbose:
-			print('generating ')
-		if not dryRun:
-			with open(readme, 'w') as f:
-				f.write(README_TEXT)
+			print('Root directory: '+root)
+			print('Source: '+srcFileAbs)
+			print('Destination: '+destFileAbs)
 
-	fullUpdate = False #whether the gallery requires an full update
-	update = []
+		relSrc = srcFileAbs[len(root+'/'):] #Example: assets/aa/bb/cc
+		relDest = destFileAbs[len(root+'/'):] #Example: assets/dd/ee/fff
+		relSrcSuffix = srcFileAbs[len(root+'/assets/'):] #Example: aa/bb/cc
+		relDestSuffix = destFileAbs[len(root+'/assets/'):] #Example: dd/ee/fff
 
-	#Update the database if template is updated
-	templateCheckSum = hashlib.sha224(open(template, 'rb').read()).hexdigest()
-	if templateCheckSum != database.templateCheckSum:
-		fullUpdate = True
-		database.templateCheckSum = templateCheckSum
+		database = Database('{0}/database'.format(root))
+		oldDatabaseData = dict(database.data)
+		database.data = {}
+		for i in oldDatabaseData:
+			if i.find(relSrc) == 0:
+				newKey = i.replace(relSrc, relDest, 1)
+				if verbose:
+					print('Database: {0} -> {1}'.format(i, newKey))
+				database.data[newKey] = oldDatabaseData[i]
+			else:
+				database.data[i] = oldDatabaseData[i]
 
-	print('Generating thumbnails in the following directories:')
-	assetsPath = dest+'/assets'
-	for root, dirs, files in os.walk(assetsPath):
-		rootRel = root[len(assetsPath)+1:]
-		print('{0}/{1}'.format(assetsPath,rootRel))
-		for d in dirs: #Create the directories structure
-			mkdirIfNotExist('{0}/thumbnails/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
-			mkdirIfNotExist('{0}/converted/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
-		if generateThumbnails(dest, database, rootRel, files) or update not in oldDirectoryList:
-			#if a new thumbnail is generated, add `rootRel` and its parents to `update`
-			update.append(rootRel)
-			parentPath = rootRel
-			while parentPath.rfind('/') != -1:
-				print(parentPath)
-				parentPath = parentPath[:parentPath.rfind('/')]
-				if parentPath not in update:
-					update.append(parentPath)
-			if '' not in update: #Since the content of rootRel is like `aa/bb/cc`, we need to add '' to the update list to make the index updated.
-				update.append('')
-		if time.time()-lastDatabaseSaveTime > DATABASE_FLUST_INTERVAL:
-			database.save()
-		newDirectoryList += [rootRelNoSlash(rootRel)+d for d in dirs]
-
-	if fullUpdate or len(update)>0 or regenWebFiles:
-		webFormat = os.path.splitext(template)[1][1:]
-		#Do generation and update of gallery
-		database.directories = newDirectoryList
 		database.save()
-		assetDir = '{0}/assets'.format(dest)
-		for root, dirs, files in os.walk(assetDir):
-			rootRel = root[len(assetDir)+1:]
-			if fullUpdate or rootRel in update or regenWebFiles:
-				generateHtml(dest, template, database, rootRel, dirs, files)
+		for mid in ['thumbnails', 'converted', 'assets']: #Do 'assets' the last so that in case something goes wrong, the operation can be re-done
+			a = '{0}/{1}/{2}'.format(root, mid, relSrcSuffix)
+			b = '{0}/{1}/{2}'.format(root, mid, relDestSuffix)
+			if verbose:
+				print('Move: {0} -> {1}'.format(a, b))
+			if not dryRun:
+				shutil.move(a, b)
 
-		#Generate index page
-		files = os.listdir(assetDir)
-	else:
-		print('Gallery not updated. Not regenerating web files')
+		print('File/directory moved!')
+		if dryRun:
+			print('Note: This is a dry run. All operations above are not actually performed')
+	else: # hgg.py <dest> <template> [-v] [-gc] [-regen-web-files] [-dry-run]
+		lastDatabaseSaveTime = time.time()
 
-	if garbageCollection:
-		doGarbageCollection(dest, template, database, fullUpdate, update)
+		dest, template = parameters
 
-	print('Generation completed!')
+		while len(dest) > 1 and dest[-1] == '/': #Remove the tailing /'s. Note that we won't remove the last / in case the user is spevifying / as the destination(what a stupid user!)
+			dest = dest[:-1]
+
+		print('Initializing...')
+		mkdirIfNotExist(dest)
+		mkdirIfNotExist('{0}/thumbnails'.format(dest))
+		mkdirIfNotExist('{0}/assets'.format(dest))
+		mkdirIfNotExist('{0}/converted'.format(dest))
+
+		databasePath = '{0}/database'.format(dest)
+		createIfNotExist(databasePath)
+		database = Database(databasePath)
+
+		oldDirectoryList = database.directories[:]
+		newDirectoryList = []
+
+		readme = '{0}/README'.format(dest)
+		if not os.path.exists(readme):
+			if verbose:
+				print('generating ')
+			if not dryRun:
+				with open(readme, 'w') as f:
+					f.write(README_TEXT)
+
+		fullUpdate = False #whether the gallery requires an full update
+		update = []
+
+		#Update the database if template is updated
+		templateCheckSum = hashlib.sha224(open(template, 'rb').read()).hexdigest()
+		if templateCheckSum != database.templateCheckSum:
+			fullUpdate = True
+			database.templateCheckSum = templateCheckSum
+
+		print('Generating thumbnails in the following directories:')
+		assetsPath = dest+'/assets'
+		for root, dirs, files in os.walk(assetsPath):
+			rootRel = root[len(assetsPath)+1:]
+			print('{0}/{1}'.format(assetsPath,rootRel))
+			for d in dirs: #Create the directories structure
+				mkdirIfNotExist('{0}/thumbnails/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
+				mkdirIfNotExist('{0}/converted/{1}'.format(dest,rootRelNoSlash(rootRel)+d))
+			if generateThumbnails(dest, database, rootRel, files) or update not in oldDirectoryList:
+				#if a new thumbnail is generated, add `rootRel` and its parents to `update`
+				update.append(rootRel)
+				parentPath = rootRel
+				while parentPath.rfind('/') != -1:
+					print(parentPath)
+					parentPath = parentPath[:parentPath.rfind('/')]
+					if parentPath not in update:
+						update.append(parentPath)
+				if '' not in update: #Since the content of rootRel is like `aa/bb/cc`, we need to add '' to the update list to make the index updated.
+					update.append('')
+			if time.time()-lastDatabaseSaveTime > DATABASE_FLUST_INTERVAL:
+				database.save()
+			newDirectoryList += [rootRelNoSlash(rootRel)+d for d in dirs]
+
+		if fullUpdate or len(update)>0 or regenWebFiles:
+			webFormat = os.path.splitext(template)[1][1:]
+			#Do generation and update of gallery
+			database.directories = newDirectoryList
+			database.save()
+			assetDir = '{0}/assets'.format(dest)
+			for root, dirs, files in os.walk(assetDir):
+				rootRel = root[len(assetDir)+1:]
+				if fullUpdate or rootRel in update or regenWebFiles:
+					generateHtml(dest, template, database, rootRel, dirs, files)
+
+			#Generate index page
+			files = os.listdir(assetDir)
+		else:
+			print('Gallery not updated. Not regenerating web files')
+
+		if garbageCollection:
+			doGarbageCollection(dest, template, database, fullUpdate, update)
+
+		print('Generation completed!')
+		if dryRun:
+			print('Note: This is a dry run. All operations above are not actually performed')
 else:
 	print('HTML Gallery Generator')
 	print('Usage: '+sys.argv[0]+' <dest> <template> [-v] [-gc] [-regen-web-files] [-dry-run]')

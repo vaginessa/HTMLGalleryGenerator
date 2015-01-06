@@ -43,7 +43,7 @@ sudo apt-get install python3-pil python3-gst-1.0 gstreamer1.0-plugins-good gstre
 ## Usage
 
 ```
-hgg.py <dest> <template> [-gc] [-regenWebFiles]
+hgg.py <dest> <template> [-v] [-gc] [-regen-web-files] [-dry-run]
 ```
 
 * `-v` enables verbose output
@@ -53,6 +53,14 @@ hgg.py <dest> <template> [-gc] [-regenWebFiles]
 * To regenerate thumbnails or converted files, you have to delete the directory `thumbnail/` or `converted/` manually.
 * The web files generated has the same file extension as the `<template>`
 * You may want to modify the `CONFIGURATION` section in `hgg.py`
+
+```
+hgg.py -mv <src> <dest> [-v] [-dry-run]
+```
+
+* Move the file/directory from `<src>` to `<dest>`
+* `<src>` and `<dest>` must be inside the folder assets. The directory has the least layer, has the folder `assets` and has the file `database` is regarded as the root directory of the website(a.k.a. `<dest>` in `hgg.py <dest> <template>  [-v] [-gc] [-regen-web-files] [-dry-run]`)
+* The files in thumbnails, converted and database are updated
 
 ## Getting Started
 
