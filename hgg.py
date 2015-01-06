@@ -66,19 +66,27 @@ BLOCK_ELEMENTS = ['for', 'if']
 
 def mkdirIfNotExist(d):
 	if not os.path.exists(d):
+		if verbose:
+			print('Creating directory: '+d)
+		if dryRun:
+			return
 		os.mkdir(d)
 
 def createIfNotExist(f):
 	if not os.path.exists(f):
+		if verbose:
+			print('Creating flie: '+f)
+		if dryRun:
+			return
 		open(f, 'a').close()
 
 #Stolen from https://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size/1094933#1094933
 def humanReadable(num, suffix='B'):
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'Yi', suffix)
+	for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+		if abs(num) < 1024.0:
+			return "%3.1f%s%s" % (num, unit, suffix)
+		num /= 1024.0
+	return "%.1f%s%s" % (num, 'Yi', suffix)
 
 #Get all files in the directory recursively. Stolen from https://stackoverflow.com/questions/18394147/recursive-sub-folder-search-and-return-files-in-a-list-python/18394205#18394205
 def getFilesRecursive(func, path):
@@ -160,6 +168,7 @@ class Database:
 		self.data = {}
 		f = open(filePath, 'r')
 		lines = f.read().splitlines() #Stolen from https://stackoverflow.com/questions/12330522/reading-a-file-without-newlines/12330535#12330535
+		f.close()
 		if len(lines) == 0:
 			return
 		self.version = int(lines[0])
@@ -172,6 +181,10 @@ class Database:
 		else:
 			print('Error: unsupported database version')
 	def save(self):
+		if verbose:
+			print('Saving database...')
+		if dryRun:
+			return
 		f = open(self.filePath, 'w')
 		f.write('{0}\n'.format(DATABASE_VERSION))
 		f.write('{0}\n'.format(self.templateCheckSum))
@@ -221,6 +234,12 @@ def generateThumbnails(dest, database, rootRel, files):
 		#Check for support of file format
 		if os.path.splitext(inFile)[1].lower() not in SUPPORTED_FORMATS and not SHOW_UNSUPPORTED_FORMATS:
 			continue
+
+		if verbose:
+			print('Generating thumbnail: '+thumbnailFile)
+
+		if dryRun:
+			continue;
 
 		try:
 			if os.path.splitext(inFile)[1].lower() in SUPPORTED_IMAGE_FORMATS:
@@ -358,25 +377,32 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 				outFile = '{0}/{1}'.format(dest, outHref)
 				#If the file is already converted, use the existing converted file instead of reconverting it
 				if os.path.exists(outFile) and os.path.getmtime(outFile) >= os.path.getmtime(inFile):
+					if verbose:
+						print('Not converted up-to-date file: '+outHref)
 					ret += urllib.request.pathname2url(outHref)
 					convertedFileList.append(outFile[len(dest)+1:])
 				else:
-					if os.path.exists(outFile):
-						os.remove(outFile)
 					command = ' '.join(tags[i][3:-1]).format(i=shellEscape(inFile), o=shellEscape(outFile))
-					print('Converting '+inFile)
-					if os.system(command) == 0:
-						if os.path.exists(outFile):
-							ret += urllib.request.pathname2url(outHref)
-							convertedFileList.append(outFile[len(dest)+1:])
-						else:
-							print('Warning: command executed successfully but the output file is *not* found. Check your command executed: '+command)
-							ret += tags[i][-1]
+					if verbose:
+						print('Converting '+inFile+'\n'+command)
+					if dryRun: #simulate a successful convertion in dry run
+						ret += urllib.request.pathname2url(outHref)
+						convertedFileList.append(outFile[len(dest)+1:])
 					else:
-						#Conversion failed. Even if there's an output, it is useless. Don't use it!
 						if os.path.exists(outFile):
 							os.remove(outFile)
-						ret += tags[i][-1]
+						if os.system(command) == 0:
+							if os.path.exists(outFile):
+								ret += urllib.request.pathname2url(outHref)
+								convertedFileList.append(outFile[len(dest)+1:])
+							else:
+								print('Warning: command executed successfully but the output file is *not* found. Check your command executed: '+command)
+								ret += tags[i][-1]
+						else:
+							#Conversion failed. Even if there's an output, it is useless. Don't use it!
+							if os.path.exists(outFile):
+								os.remove(outFile)
+							ret += tags[i][-1]
 			else:
 				try:
 					ret += var[tags[i][1]]
@@ -419,7 +445,9 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 def generateHtml(dest, template, database, rootRel, dirs, files):
 	htmlFilePath = '{0}/{1}.{2}'.format(dest, rootRel.replace('/','-'), webFormat) if rootRel != '' else '{0}/index.{1}'.format(dest, webFormat)
 	print('Generating HTML file: '+htmlFilePath)
-	htmlFile = open(htmlFilePath, 'w')
+	htmlFile = None
+	if not dryRun:
+		htmlFile = open(htmlFilePath, 'w')
 	templateFile = open(template, 'r')
 	template = templateFile.read()
 	templateFile.close()
@@ -428,8 +456,9 @@ def generateHtml(dest, template, database, rootRel, dirs, files):
 	tags = [Match(i.group(0), i.group(1).split(), i.start(), i.end()) for i in re.finditer('<\?hgg\s*((\s+(.+?))+)\s*\?>', template)]
 
 	if len(tags) == 0:
-		htmlFile.write(template)
-		htmlFile.close()
+		if not dryRun:
+			htmlFile.write(template)
+			htmlFile.close()
 		return
 
 	htmlFileBuffer = ''
@@ -437,8 +466,9 @@ def generateHtml(dest, template, database, rootRel, dirs, files):
 	htmlFileBuffer += parseHtml(dest, database, rootRel, dirs, files, template, tags, 0)
 	htmlFileBuffer += template[tags[-1].end():]
 
-	htmlFile.write(htmlFileBuffer)
-	htmlFile.close()
+	if not dryRun:
+		htmlFile.write(htmlFileBuffer)
+		htmlFile.close()
 
 #Remove unused files
 def doGarbageCollection(dest, template, database, fullUpdate, update):
@@ -481,7 +511,10 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 		if d not in directoryList:
 			oldFile = '{0}/{1}.{2}'.format(dest, d.replace('/','-'), webFormat)
 			if os.path.exists(oldFile):
-				os.remove(oldFile)
+				if verbose:
+					print('Removing: '+oldFile)
+				if not dryRun:
+					os.remove(oldFile)
 
 	#Remove old thumbnails and converted files that the original version in <dest>/assets is deleted
 	#Note: do dest+'/thumbnails' last because it is used for old directory layout detection
@@ -494,7 +527,10 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 				if os.path.splitext(relFilePath)[0] not in filesList: #os.path.splitext(relFilePath)[0] removes the file extension
 					oldFile = '{0}/{1}'.format(path,relFilePath)
 					if os.path.exists(oldFile):
-						os.remove(oldFile)
+						if verbose:
+							print('Removing: '+oldFile)
+						if not dryRun:
+							os.remove(oldFile)
 		#Remove old directories
 		for root, dirs, files in os.walk(path):
 			rootRel = root[len(path)+1:]
@@ -503,7 +539,10 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 				if relDirPath not in directoryList:
 					oldFile = '{0}/{1}'.format(path,relDirPath)
 					if os.path.exists(oldFile):
-						shutil.rmtree(oldFile)
+						if verbose:
+							print('Recursively removing: '+oldFile) #FIXME: This message will be printed multiple times in dry run
+						if not dryRun:
+							shutil.rmtree(oldFile)
 
 	#Remove unused converted files that the original version exists, but the converted version is unused
 	path = dest+'/converted'
@@ -513,12 +552,17 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 			if ( fullUpdate or rootRel in update ) and 'converted/{0}'.format(f) not in convertedFileList:
 				oldFile = '{0}/converted/{1}'.format(dest,f)
 				if os.path.exists(oldFile):
-					os.remove(oldFile)
+					if verbose:
+						print('Removing: '+oldFile)
+					if not dryRun:
+						os.remove(oldFile)
 
 convertedFileList = []
 invalidArguments = False
 garbageCollection = False
 regenWebFiles = False
+dryRun = False
+verbose = False
 
 options = [i[1:] for i in sys.argv[1:] if i.find('-')==0]
 for o in options:
@@ -526,6 +570,10 @@ for o in options:
 		garbageCollection = True
 	elif o=='regen-web-files':
 		regenWebFiles = True
+	elif o=='dry-run':
+		dryRun = True
+	elif o=='v':
+		verbose = True
 	else:
 		print('Unknown option -'+o)
 		invalidArguments = True
@@ -550,10 +598,14 @@ if not invalidArguments and len(parameters) == 2:
 	createIfNotExist(databasePath)
 	database = Database(databasePath)
 
+
 	readme = '{0}/README'.format(dest)
 	if not os.path.exists(readme):
-		with open(readme, 'w') as f:
-			f.write(README_TEXT)
+		if verbose:
+			print('generating ')
+		if not dryRun:
+			with open(readme, 'w') as f:
+				f.write(README_TEXT)
 
 	fullUpdate = False #whether the gallery requires an full update
 	update = []
@@ -607,5 +659,5 @@ if not invalidArguments and len(parameters) == 2:
 	print('Generation completed!')
 else:
 	print('HTML Gallery Generator')
-	print('Usage: '+sys.argv[0]+' <dest> <template> [-gc] [-regen-web-files]')
+	print('Usage: '+sys.argv[0]+' <dest> <template> [-v] [-gc] [-regen-web-files] [-dry-run]')
 

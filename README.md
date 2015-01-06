@@ -46,8 +46,10 @@ sudo apt-get install python3-pil python3-gst-1.0 gstreamer1.0-plugins-good gstre
 hgg.py <dest> <template> [-gc] [-regenWebFiles]
 ```
 
+* `-v` enables verbose output
 * `-gc` enables garbage collection
 * `-regen-web-files` forces regeneration of web files
+* `-dry-run` makes the script simulate the actions without actually making the changes to the files
 * To regenerate thumbnails or converted files, you have to delete the directory `thumbnail/` or `converted/` manually.
 * The web files generated has the same file extension as the `<template>`
 * You may want to modify the `CONFIGURATION` section in `hgg.py`
