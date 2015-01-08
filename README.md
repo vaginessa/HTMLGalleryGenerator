@@ -61,6 +61,7 @@ hgg.py -mv <src> <dest> [-v] [-dry-run]
 * Move the file/directory from `<src>` to `<dest>`
 * `<src>` and `<dest>` must be inside the folder assets. The directory has the least layer, has the folder `assets` and has the file `database` is regarded as the root directory of the website(a.k.a. `<dest>` in `hgg.py <dest> <template>  [-v] [-gc] [-regen-web-files] [-dry-run]`)
 * The files in thumbnails, converted and database are updated
+* This command does not generate/rename HTML files. After moving files with this command, you have to re-run the generation command manually.
 
 ## Getting Started
 
