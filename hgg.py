@@ -467,9 +467,6 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 def generateHtml(dest, template, database, rootRel, dirs, files):
 	htmlFilePath = '{0}/{1}.{2}'.format(dest, rootRel.replace('/','-'), webFormat) if rootRel != '' else '{0}/index.{1}'.format(dest, webFormat)
 	print('Generating HTML file: '+htmlFilePath)
-	htmlFile = None
-	if not dryRun:
-		htmlFile = open(htmlFilePath, 'w')
 	templateFile = open(template, 'r')
 	template = templateFile.read()
 	templateFile.close()
@@ -478,10 +475,7 @@ def generateHtml(dest, template, database, rootRel, dirs, files):
 	tags = [Match(i.group(0), i.group(1).split(), i.start(), i.end()) for i in re.finditer('<\?hgg\s*((\s+(.+?))+)\s*\?>', template)]
 
 	if len(tags) == 0:
-		if not dryRun:
-			htmlFile.write(template)
-			htmlFile.close()
-		return
+		print('Warning: your template contains no hgg tags at all. Are you using a wrong html file as a template file?')
 
 	htmlFileBuffer = ''
 	htmlFileBuffer += template[:tags[0].start()]
@@ -489,6 +483,7 @@ def generateHtml(dest, template, database, rootRel, dirs, files):
 	htmlFileBuffer += template[tags[-1].end():]
 
 	if not dryRun:
+		htmlFile = open(htmlFilePath, 'w')
 		htmlFile.write(htmlFileBuffer)
 		htmlFile.close()
 
