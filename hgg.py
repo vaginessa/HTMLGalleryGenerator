@@ -400,7 +400,7 @@ def parseHtml(dest, database, rootRel, dirs, files, template, tags, i, j=-1, var
 				#If the file is already converted, use the existing converted file instead of reconverting it
 				if os.path.exists(outFile) and os.path.getmtime(outFile) >= os.path.getmtime(inFile):
 					if verbose:
-						print('Not converted up-to-date file: '+outHref)
+						print('Not converting up-to-date file: '+outHref)
 					ret += urllib.request.pathname2url(outHref)
 					convertedFileList.append(outFile[len(dest)+1:])
 				else:
@@ -537,7 +537,7 @@ def doGarbageCollection(dest, template, database, fullUpdate, update):
 			rootRel = root[len(path)+1:]
 			for f in files:
 				relFilePath = rootRelNoSlash(rootRel)+f
-				if os.path.splitext(relFilePath)[0] not in filesList: #os.path.splitext(relFilePath)[0] removes the file extension
+				if os.path.splitext(relFilePath)[0] not in filesList and ( path != dest+'/converted' or 'converted/{0}'.format(relFilePath) not in convertedFileList): #os.path.splitext(relFilePath)[0] removes the file extension. For converted file, os.path.splitext(relFilePath)[0] may not work because it may have double file extension. Therefore, we need to check convertedFileList
 					oldFile = '{0}/{1}'.format(path,relFilePath)
 					if os.path.exists(oldFile):
 						if verbose:
